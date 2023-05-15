@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hien vat tieu bieu</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link rel="stylesheet" href="assets/vue/slick/slick.css">
+    <link rel="stylesheet" href="assets/vue/slick/slick-theme.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/animate.css">
+
+</head>
+
+<body>
+    <div class="main" id="app">
+        <section v-show="layout">
+            <div class="khung" v-if="!loading" v-show="((index==current_article)&&showPopup)"
+                v-for="item, index in articles">
+                <div class="header">
+                    <h2>{[{articles[index].data.title['vi']}]}</h2>
+                </div>
+                <div class="content">
+                    <p v-html="articles[index].data.description['vi']">
+                    </p>
+                </div>
+                <div class="linh-hoat">
+                    <div class="iframe">
+                        <iframe :src="get3DView(articles[index].data.object)" frameborder="0"></iframe>
+                    </div>
+                </div>
+                <div class="btn-close">
+                    <img src="assets/images/Btn_Close.png" alt="" @click="showPopup=false">
+                </div>
+            </div>
+    
+            <div class="slider" v-if="!loading">
+                <div class="slides" ref="slick" :options="slickOptions">
+                    <div :class="'slide-img' +' '+'slide-img'+ (index+1)" v-for="item, index in articles.slice(0,3)">
+                        <img :src="'http://14.248.85.158:8096/' + item.data.thumb" alt=""width="200" height="200" v-on:click="popup(index,'false')">
+                        <p class="desc" v-html="item.data.title['vi']"></p>
+                    </div>
+                </div>
+                <div class="show-popup" v-on:click="Showlayout(false)">
+                    <img src="assets/images/bottom.png" alt="">
+                </div>
+            </div>
+
+        </section>
+
+        <section v-show="!layout" class="section-2">
+            <h3>danh sách hiện vật</h3>
+            <div class="hien-vat">
+                <article :class="[{ active: (index == indexAr) }, 'box-hienvat css-grid__card wow']" v-for="item, index in articles">
+                        <img :src="'http://14.248.85.158:8096/' + item.data.thumb" alt=""width="200" height="140" v-on:click="popup(index,'true')">
+                        <p class="desc" v-html="item.data.title['vi']"></p>
+                </article>
+                <div class="close-popup" v-on:click="Showlayout(true)">
+                    <img src="./assets/images/Btn_Close.png" alt="">
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="assets/vue/jquery.js" type="text/javascript"></script>
+    <script src="assets/vue/slick/slick.js" type="text/javascript" charset="utf-8"></script>
+    <script src="assets/vue/vue.js"></script>
+    <script src="assets/vue/vue-lazy.js"></script>
+    <script src="assets/vue/axios.js"></script>
+    <script src="assets/vue/slickCarousel.umd.js"></script>
+    <script src='assets/vue/wow.min.js'></script>
+    <script src='assets/vue/animejs.min.js'></script>
+
+    <script >
+       function wow(){
+        new WOW().init();
+       } 
+        Slick = window.slickCarousel.umd;
+        var vm = new Vue({
+            el: '#app',
+            delimiters: ['{[{', '}]}'],
+            components: { Slick },
+            data: function () {
+                return {
+                    loading: true,
+                    layout: true,
+                    indexAr:0,
+                    slickOptions: {
+                        infinite: false,
+                        slidesToShow: 3,
+                        slidesToScroll: 3
+                    },
+                    articles: [],
+                    current_article: 0,
+                    showPopup: true,
+                }
+            },
+            methods: {
+                popup(index,check) {
+                    this.indexAr = index;
+                    this.layout = check;
+                    this.showPopup = true;
+                    this.current_article = index;
+                    vm.loadAnimate();
+                },
+                get3DView(path){
+                    var ext = path.split(".").at(-1)
+                    if (ext == "glb") {
+                        return "http://14.248.85.158:8096//vptrandisplay/frontend/viewglb?glb="+path
+                    } else return path;
+                },
+                Showlayout(check){
+                    this.layout = check;
+                    wow();
+                },
+                loadAnimate(){
+                    anime({
+                        targets: '.khung',
+                        easing: 'easeOutExpo',
+                        opacity: [0, 1],
+                        duration: 2000,
+                        delay: 500
+                    }
+                    )
+                    anime({
+                        targets:'.slide-img1',
+                        easing: 'easeOutExpo',
+                        left:  [-240,20],
+                        duration: 1000,
+                        delay: 200
+                    })
+                    anime({
+                        targets:'.slide-img2',
+                        easing: 'easeOutExpo',
+                        left:  [-240,325],
+                        duration: 1000,
+                        delay: 200
+                    })
+                    anime({
+                        targets:'.slide-img3',
+                        easing: 'easeOutExpo',
+                        left:  [-240,620],
+                        duration: 1000,
+                        delay: 200
+                    })
+                }
+             
+            },
+
+            mounted() {
+                var vm = this
+                setTimeout(function(){
+                    vm.loadAnimate();
+                },500)
+
+            },
+            created: function () {
+                var vm = this
+                const queryString = window.location.search;
+                const urlParams = new URLSearchParams(queryString);
+                axios.get('http://14.248.85.158:8096/vptrandisplay/api/screen/get?uuid=' + urlParams.get('uuid')).then(function (response) {
+                    response.data.articles.forEach(element => {
+                        console.log(element.data.object);
+                        
+                    });
+                    vm.articles = response.data.articles;
+                    vm.loading = false;
+
+                });
+
+                // $('.slides').slick(this.slickOptions);
+
+            }
+
+        });
+    </script>
+</body>
+
+</html>
